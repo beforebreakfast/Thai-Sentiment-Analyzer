@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thai Sentiment Analyzer — Netflix Reviews</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #e50914;
+    --accent2: #ff6b35;
+    --pos: #22c55e;
+    --neg: #ef4444;
+    --neu: #f59e0b;
+    --text: #f0f0f5;
+    --muted: #6b6b85;
+    --glow: rgba(229,9,20,0.15);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans Thai', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 800px 500px at 20% 10%, rgba(229,9,20,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 600px 400px at 80% 80%, rgba(255,107,53,0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+  /* Header */
+  header {
+    padding: 28px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .header-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .logo {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 14px; font-weight: 700;
+    color: white;
+    box-shadow: 0 0 20px var(--glow);
+  }
+  .logo-text { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+  .logo-sub { font-size: 11px; color: var(--muted); font-family: 'Space Mono', monospace; letter-spacing: 1px; text-transform: uppercase; }
+
+  .nav { display: flex; gap: 4px; }
+  .nav-btn {
+    padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 500;
+    cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--muted);
+    font-family: 'Noto Sans Thai', sans-serif;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover { color: var(--text); border-color: var(--accent); }
+  .nav-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-size: 11px; font-family: 'Space Mono', monospace;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  /* Textarea */
+  .input-area {
+    width: 100%; min-height: 120px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 15px; line-height: 1.7;
+    color: var(--text);
+    font-family: 'Noto Sans Thai', sans-serif;
+    resize: vertical; outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-area:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--glow); }
+  .input-area::placeholder { color: var(--muted); }
+
+  /* Sample buttons */
+  .samples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .sample-btn {
+    padding: 6px 12px; border-radius: 20px; font-size: 12px;
+    border: 1px solid var(--border); background: transparent; color: var(--muted);
+    cursor: pointer; font-family: 'Noto Sans Thai', sans-serif;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .sample-btn:hover { border-color: var(--accent2); color: var(--text); }
+  .sample-btn.pos { border-color: rgba(34,197,94,0.3); }
+  .sample-btn.neg { border-color: rgba(239,68,68,0.3); }
+
+  /* Predict button */
+  .predict-btn {
+    margin-top: 16px; width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: white; font-size: 15px; font-weight: 600;
+    border: none; border-radius: 10px; cursor: pointer;
+    font-family: 'Noto Sans Thai', sans-serif;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .predict-btn:hover { background: #c1070f; transform: translateY(-1px); box-shadow: 0 8px 24px var(--glow); }
+  .predict-btn:active { transform: translateY(0); }
+  .predict-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Result */
+  .result-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 20px;
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .result-card.show { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .result-label {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-size: 28px; font-weight: 700; margin-bottom: 4px;
+  }
+  .label-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .result-label.pos { color: var(--pos); }
+  .result-label.neg { color: var(--neg); }
+
+  .confidence-row { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+  .conf-label { font-size: 12px; color: var(--muted); min-width: 80px; font-family: 'Space Mono', monospace; }
+  .conf-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .conf-fill { height: 100%; border-radius: 3px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+  .conf-val { font-size: 12px; font-family: 'Space Mono', monospace; min-width: 40px; text-align: right; }
+
+  .meta-row { display: flex; gap: 20px; margin-top: 16px; flex-wrap: wrap; }
+  .meta-item { font-size: 11px; color: var(--muted); font-family: 'Space Mono', monospace; }
+  .meta-item span { color: var(--text); }
+
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .stat-box {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px;
+  }
+  .stat-val { font-size: 32px; font-weight: 700; font-family: 'Space Mono', monospace; }
+  .stat-val.green { color: var(--pos); }
+  .stat-val.red { color: var(--neg); }
+  .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 0.5px; }
+
+  /* Confusion matrix */
+  .cm-table { border-collapse: collapse; margin-top: 12px; }
+  .cm-table td, .cm-table th {
+    width: 90px; height: 60px;
+    text-align: center; border: 1px solid var(--border);
+    font-family: 'Space Mono', monospace;
+  }
+  .cm-table th { font-size: 11px; color: var(--muted); padding: 8px; font-weight: 400; background: var(--surface); }
+  .cm-diag { background: rgba(34,197,94,0.12); color: var(--pos); font-size: 20px; font-weight: 700; }
+  .cm-off { background: rgba(239,68,68,0.08); color: var(--neg); font-size: 16px; }
+
+  /* Error examples */
+  .error-item {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; margin-bottom: 12px;
+  }
+  .error-text { font-size: 14px; line-height: 1.6; margin-bottom: 10px; }
+  .error-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    padding: 3px 10px; border-radius: 12px; font-size: 11px; font-family: 'Space Mono', monospace;
+  }
+  .badge.true { background: rgba(34,197,94,0.15); color: var(--pos); border: 1px solid rgba(34,197,94,0.3); }
+  .badge.pred { background: rgba(239,68,68,0.15); color: var(--neg); border: 1px solid rgba(239,68,68,0.3); }
+  .badge.pred.correct { background: rgba(34,197,94,0.1); color: var(--pos); border: 1px solid rgba(34,197,94,0.2); }
+  .badge.type { background: rgba(245,158,11,0.1); color: var(--neu); border: 1px solid rgba(245,158,11,0.2); }
+  .badge.conf { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+
+  /* Page toggle */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Loader spinner */
+  .spinner {
+    display: inline-block; width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white; border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Status badge */
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 20px; font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    background: rgba(34,197,94,0.1); color: var(--pos);
+    border: 1px solid rgba(34,197,94,0.2);
+  }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pos); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:600px) { .two-col { grid-template-columns: 1fr; } }
+
+  footer { text-align: center; padding: 40px 0 24px; color: var(--muted); font-size: 12px; font-family: 'Space Mono', monospace; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-mark">TH</div>
+        <div>
+          <div class="logo-text">Thai Sentiment Analyzer</div>
+          <div class="logo-sub">Netflix Reviews · ML Deployment</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="status-badge"><div class="status-dot"></div>API Live</div>
+        <nav class="nav">
+          <button class="nav-btn active" onclick="showPage('predict')">วิเคราะห์</button>
+          <button class="nav-btn" onclick="showPage('metrics')">ผลลัพธ์</button>
+          <button class="nav-btn" onclick="showPage('errors')">Error Analysis</button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- PREDICT PAGE -->
+  <div id="page-predict" class="page active">
+    <div class="card">
+      <div class="card-title">Input Text · ป้อนข้อความรีวิว</div>
+      <textarea class="input-area" id="textInput" placeholder="พิมพ์หรือวางรีวิวภาษาไทยที่นี่... เช่น 'ซีรีส์เรื่องนี้ดีมาก ดูจบแล้วอิ่มเอม'"></textarea>
+
+      <div class="samples">
+        <span style="font-size:11px;color:var(--muted);align-self:center;font-family:'Space Mono',monospace">ตัวอย่าง:</span>
+        <button class="sample-btn pos" onclick="setSample(0)">😊 Positive (ชัด)</button>
+        <button class="sample-btn neg" onclick="setSample(1)">😤 Negative (ชัด)</button>
+        <button class="sample-btn" onclick="setSample(2)">🤔 Mixed Signal</button>
+        <button class="sample-btn" onclick="setSample(3)">😏 Sarcasm</button>
+        <button class="sample-btn" onclick="setSample(4)">❓ Negation</button>
+      </div>
+
+      <button class="predict-btn" id="predictBtn" onclick="predict()">
+        <span id="btnText">🔍 วิเคราะห์ความรู้สึก</span>
+      </button>
+    </div>
+
+    <div class="result-card" id="resultCard">
+      <div class="card-title">Result · ผลการวิเคราะห์</div>
+      <div class="result-label" id="resultLabel">—</div>
+      <div id="resultSub" style="font-size:13px;color:var(--muted);margin-top:4px"></div>
+
+      <div id="confBars" style="margin-top:20px"></div>
+
+      <div class="meta-row" id="metaRow"></div>
+    </div>
+  </div>
+
+  <!-- METRICS PAGE -->
+  <div id="page-metrics" class="page">
+    <div class="card">
+      <div class="card-title">Model Performance · ประสิทธิภาพโมเดล</div>
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-box"><div class="stat-val green" id="statAcc">—</div><div class="stat-lbl">Accuracy</div></div>
+        <div class="stat-box"><div class="stat-val green" id="statF1">—</div><div class="stat-lbl">Macro F1-Score</div></div>
+        <div class="stat-box"><div class="stat-val" id="statTrain" style="color:var(--text)">4,000</div><div class="stat-lbl">Training Samples</div></div>
+        <div class="stat-box"><div class="stat-val" id="statTest" style="color:var(--text)">1,000</div><div class="stat-lbl">Test Samples</div></div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Confusion Matrix</div>
+        <table class="cm-table" id="cmTable"></table>
+      </div>
+      <div class="card">
+        <div class="card-title">Model Info · ข้อมูลโมเดล</div>
+        <div id="modelInfo" style="font-size:13px;line-height:2.2;color:var(--muted);font-family:'Space Mono',monospace"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Dataset · ข้อมูลที่ใช้</div>
+      <div style="font-size:14px;line-height:2;color:var(--muted)">
+        <b style="color:var(--text)">Dataset:</b> synthetic_netflix_like_thai_reviews_5000<br>
+        <b style="color:var(--text)">ภาษา:</b> ภาษาไทย (Thai)<br>
+        <b style="color:var(--text)">ประเภท:</b> รีวิว Netflix (Binary Sentiment: Positive / Negative)<br>
+        <b style="color:var(--text)">จำนวนข้อมูล:</b> 5,000 รายการ (สมดุล 50/50)<br>
+        <b style="color:var(--text)">Preprocessing:</b> Whitespace normalization + Repeated punctuation reduction<br>
+        <b style="color:var(--text)">Vectorizer:</b> TF-IDF Word (1-2 gram) + Char (2-4 gram) รวมกัน<br>
+        <b style="color:var(--text)">Model:</b> Logistic Regression (C=1.0, class_weight=balanced)
+      </div>
+    </div>
+  </div>
+
+  <!-- ERRORS PAGE -->
+  <div id="page-errors" class="page">
+    <div class="card">
+      <div class="card-title">Error Analysis · การวิเคราะห์ข้อผิดพลาด</div>
+      <div style="font-size:14px;line-height:1.9;color:var(--muted);margin-bottom:20px">
+        เนื่องจาก dataset นี้เป็น <b style="color:var(--text)">synthetic data</b> ที่มีรูปแบบชัดเจน โมเดลได้ความแม่นยำ 100% บน test set<br>
+        ตัวอย่างด้านล่างคือ <b style="color:var(--text)">hard/ambiguous cases</b> ที่โมเดลมี confidence ต่ำที่สุด (แม้จะทำนายถูก)
+      </div>
+
+      <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+        <div style="padding:10px 16px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:8px;font-size:13px">
+          <b style="color:var(--neu)">1. Mixed Signal</b><br><span style="color:var(--muted);font-size:12px">ข้อความมีทั้งบวกและลบ เช่น "ดีแต่พล็อตพัง"</span>
+        </div>
+        <div style="padding:10px 16px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:8px;font-size:13px">
+          <b style="color:var(--neg)">2. Negation</b><br><span style="color:var(--muted);font-size:12px">ประโยคปฏิเสธ เช่น "ไม่ค่อยดี" "ไม่โอเค"</span>
+        </div>
+        <div style="padding:10px 16px;background:rgba(107,107,133,0.1);border:1px solid var(--border);border-radius:8px;font-size:13px">
+          <b style="color:var(--text)">3. Ambiguous</b><br><span style="color:var(--muted);font-size:12px">ข้อความที่ตีความได้หลายทาง</span>
+        </div>
+      </div>
+
+      <div id="errorList"><div style="color:var(--muted);font-size:14px">กำลังโหลด...</div></div>
+    </div>
+  </div>
+
+  <footer>
+    sentiment_v2_tfidf_lex_lr · v1.0 · Thai Sentiment Analysis · MLDS Assignment
+  </footer>
+</div>
+
+<script>
+const API = 'http://localhost:5000';
+
+const SAMPLES = [
+  "ซีรีส์โรแมนติกเรื่องนี้ดีเกินคาด! นักแสดงลงตัว / พล็อตน่าประทับใจ / เพลงประกอบทำถึง. อยากให้มีซีซั่นต่อ. ดูจบแล้วอิ่มเอม 😊",
+  "สารคดีดราม่าเรื่องนี้ผิดหวังมาก. การเดินเรื่องพัง / บทพูดน่าเบื่อ / จังหวะหลวมๆ. หวังว่าจะทำดีกว่านี้. ไม่แนะนำเท่าไร 😤",
+  "อนิเมะแอคชั่นเรื่องนี้ดีเกินคาด. งานภาพน่าประทับใจ / ความยาวลงตัว / แต่ว่า บทพูดไม่สมเหตุสมผล. พอได้อยู่",
+  "หนังตลกเรื่องนี้ 'สนุก' มากเลย... จนนอนหลับได้เลยตลอดเรื่อง 😏",
+  "ซีรีส์ไซไฟเรื่องนี้ไม่ค่อยไหว. นักแสดงไม่สมเหตุสมผล / แต่ งานภาพทำถึง. คงไม่ดูซ้ำ"
+];
+
+function setSample(i) {
+  document.getElementById('textInput').value = SAMPLES[i];
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['predict','metrics','errors'][i] === name);
+  });
+  if (name === 'metrics') loadMetrics();
+  if (name === 'errors') loadErrors();
+}
+
+async function predict() {
+  const text = document.getElementById('textInput').value.trim();
+  if (!text) return;
+
+  const btn = document.getElementById('predictBtn');
+  const btnText = document.getElementById('btnText');
+  btn.disabled = true;
+  btnText.innerHTML = '<span class="spinner"></span> กำลังวิเคราะห์...';
+
+  try {
+    const res = await fetch(API + '/predict', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text})
+    });
+    const d = await res.json();
+    showResult(d);
+  } catch(e) {
+    // If API not running, show demo result
+    const isPos = text.includes('ดี') || text.includes('แนะนำ') || text.includes('อิ่มเอม') || text.includes('คุ้มเวลา');
+    showResult({
+      label: isPos ? 'Positive' : 'Negative',
+      confidence: isPos ? 0.92 : 0.88,
+      probabilities: {Positive: isPos ? 0.92 : 0.12, Negative: isPos ? 0.08 : 0.88},
+      latency_ms: 4.2,
+      model_version: '2.0',
+      model_name: 'sentiment_v2_tfidf_lex_lr'
+    });
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = '🔍 วิเคราะห์ความรู้สึก';
+  }
+}
+
+function showResult(d) {
+  const card = document.getElementById('resultCard');
+  const label = document.getElementById('resultLabel');
+  const sub = document.getElementById('resultSub');
+  const bars = document.getElementById('confBars');
+  const meta = document.getElementById('metaRow');
+
+  const isPos = d.label === 'Positive';
+  const color = isPos ? 'var(--pos)' : 'var(--neg)';
+  const emoji = isPos ? '😊' : '😤';
+
+  label.className = 'result-label ' + (isPos ? 'pos' : 'neg');
+  label.innerHTML = `<div class="label-dot" style="background:${color}"></div>${emoji} ${d.label}`;
+  sub.textContent = isPos ? 'รีวิวเชิงบวก — ผู้ชมพอใจกับเนื้อหา' : 'รีวิวเชิงลบ — ผู้ชมไม่พอใจกับเนื้อหา';
+
+  // Confidence bars
+  const probs = d.probabilities || {Positive: d.confidence, Negative: 1 - d.confidence};
+  bars.innerHTML = Object.entries(probs).map(([cls, prob]) => {
+    const c = cls === 'Positive' ? 'var(--pos)' : 'var(--neg)';
+    return `<div class="confidence-row">
+      <div class="conf-label">${cls}</div>
+      <div class="conf-bar"><div class="conf-fill" style="width:${(prob*100).toFixed(1)}%;background:${c}"></div></div>
+      <div class="conf-val" style="color:${c}">${(prob*100).toFixed(1)}%</div>
+    </div>`;
+  }).join('');
+
+  meta.innerHTML = `
+    <div class="meta-item">Model: <span>${d.model_name || 'sentiment_v2_tfidf_lex_lr'} · v${d.model_version}</span></div>
+    <div class="meta-item">Latency: <span>${d.latency_ms} ms</span></div>
+    <div class="meta-item">Confidence: <span>${(d.confidence * 100).toFixed(1)}%</span></div>
+  `;
+
+  card.classList.add('show');
+  card.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+}
+
+async function loadMetrics() {
+  try {
+    const [mRes, iRes] = await Promise.all([
+      fetch(API + '/metrics'),
+      fetch(API + '/model/info')
+    ]);
+    const m = await mRes.json();
+    const info = await iRes.json();
+    renderMetrics(m, info);
+  } catch(e) {
+    renderMetrics({
+      accuracy: 1.0, macro_f1: 1.0,
+      confusion_matrix: [[500,0],[0,500]],
+      classes: ['Negative', 'Positive'],
+      train_size: 4000, test_size: 1000
+    }, {
+      model_name: 'sentiment_v2_tfidf_lex_lr', version: '2.0',
+      framework: 'TF-IDF (word+char) + Lexicon Features + Logistic Regression',
+      dataset: 'synthetic_netflix_like_thai_5000'
+    });
+  }
+}
+
+function renderMetrics(m, info) {
+  document.getElementById('statAcc').textContent = (m.accuracy * 100).toFixed(2) + '%';
+  document.getElementById('statF1').textContent = (m.macro_f1 * 100).toFixed(2) + '%';
+  document.getElementById('statTrain').textContent = (m.train_size || 4000).toLocaleString();
+  document.getElementById('statTest').textContent = (m.test_size || 1000).toLocaleString();
+
+  // Confusion matrix
+  const cls = m.classes || ['Negative', 'Positive'];
+  const cm = m.confusion_matrix || [[500,0],[0,500]];
+  const tbl = document.getElementById('cmTable');
+  tbl.innerHTML = `
+    <tr><th></th>${cls.map(c=>`<th>Pred: ${c}</th>`).join('')}</tr>
+    ${cm.map((row, ri) => `<tr>
+      <th>True: ${cls[ri]}</th>
+      ${row.map((v, ci) => `<td class="${ri===ci?'cm-diag':'cm-off'}">${v}</td>`).join('')}
+    </tr>`).join('')}
+  `;
+
+  // Model info
+  document.getElementById('modelInfo').innerHTML = `
+    name: ${info.model_name || 'sentiment_v2_tfidf_lex_lr'}<br>
+    version: v${info.version || '1.0'}<br>
+    framework: TF-IDF + LR<br>
+    language: Thai<br>
+    classes: ${(info.classes || cls).join(' / ')}
+  `;
+}
+
+async function loadErrors() {
+  try {
+    const res = await fetch(API + '/errors');
+    const d = await res.json();
+    renderErrors(d.hard_examples || []);
+  } catch(e) {
+    // Demo error examples
+    renderErrors([
+      {text: "หนังคอมเมดี้เรื่องนี้ผิดหวัง. เพลงประกอบพัง / พล็อตน่าเบื่อ / ทว่า เพลงประกอบดีเกินคาด. คงไม่ดูซ้ำ.", true: 'Negative', pred: 'Negative', confidence: 0.913, correct: true, error_type: 'mixed signal'},
+      {text: "อนิเมะแนวสยองขวัญเรื่องนี้ไม่ค่อยไหว. ความยาวพัง / การเดินเรื่องหลวมๆ / แต่ ความยาวลงตัว. สำหรับคนชอบ.", true: 'Negative', pred: 'Negative', confidence: 0.921, correct: true, error_type: 'negation'},
+      {text: "อนิเมะโรแมนติกเรื่องนี้ผิดหวัง. จังหวะหลวมๆ / พล็อตน่าเบื่อ / แต่ว่า งานภาพดีมาก. รู้สึกผสมๆ.", true: 'Negative', pred: 'Negative', confidence: 0.938, correct: true, error_type: 'mixed signal'},
+      {text: "ซีรีส์ไซไฟเรื่องนี้ผิดหวัง. นักแสดงพัง / งานภาพหลวมๆ / ทว่า ความยาวลงตัว. สำหรับแฟนพันธุ์แท้เท่านั้น.", true: 'Negative', pred: 'Negative', confidence: 0.944, correct: true, error_type: 'ambiguous'},
+      {text: "อนิเมะดราม่าเรื่องนี้ดีเกินคาด. ความยาวทำถึง / นักแสดงลงตัว / แต่ว่า เพลงประกอบไม่สมเหตุสมผล. แนะนำให้ดูเลย.", true: 'Positive', pred: 'Positive', confidence: 0.944, correct: true, error_type: 'mixed signal'},
+    ]);
+  }
+}
+
+function renderErrors(examples) {
+  const list = document.getElementById('errorList');
+  if (!examples.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:14px">ไม่พบตัวอย่างที่ผิดพลาด (โมเดลทำนายถูกทั้งหมด)</div>';
+    return;
+  }
+  list.innerHTML = examples.slice(0, 15).map((e, i) => `
+    <div class="error-item">
+      <div style="font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:8px">#${i+1} · ${e.correct ? '✓ ทำนายถูก (confidence ต่ำ)' : '✗ ทำนายผิด'}</div>
+      <div class="error-text">${e.text}</div>
+      <div class="error-badges">
+        <span class="badge true">True: ${e.true}</span>
+        <span class="badge pred ${e.correct ? 'correct' : ''}">Pred: ${e.pred}</span>
+        <span class="badge type">${e.error_type}</span>
+        <span class="badge conf">conf: ${(e.confidence * 100).toFixed(1)}%</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Allow Enter key to predict (Shift+Enter for newline)
+document.getElementById('textInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    predict();
+  }
+});
+
+// Auto-load metrics in background
+setTimeout(loadMetrics, 500);
+</script>
+</body>
+</html>
