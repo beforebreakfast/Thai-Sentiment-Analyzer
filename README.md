@@ -27,7 +27,7 @@ DS-Project/
 ### Backend (API)
 
 ```bash
-cd webapp/backend
+cd DS-Project/backend
 pip install -r requirements.txt
 python app.py
 ```
@@ -36,7 +36,7 @@ API runs at: `http://localhost:5000`
 
 ### Frontend
 
-Open `webapp/frontend/index.html` in a browser.
+Open `DS-Project/frontend/index.html` in a browser.
 
 > **Note**: The frontend works in demo/offline mode if the backend is not running. For full functionality (real predictions), start the Flask backend first.
 
