@@ -8,7 +8,7 @@ Dataset: `7.synthetic_netflix_like_thai_reviews_5000`
 ## Project Structure
 
 ```
-webapp/
+DS-Project/
 ├── backend/
 │   ├── app.py                  # Flask API
 │   ├── sentiment_model.joblib  # Trained model
@@ -16,6 +16,8 @@ webapp/
 │   └── requirements.txt
 └── frontend/
     └── index.html              # Web UI (single file)
+└── 7.synthetic_netflix_like_thai_reviews_5000.csv
+└── train.py
 ```
 
 ---
