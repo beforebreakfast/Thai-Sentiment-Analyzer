@@ -1,0 +1,51 @@
+{
+  "dataset": "7.synthetic_netflix_like_thai_reviews_5000(2).csv",
+  "total_rows_after_cleaning": 4999,
+  "train_size": 3999,
+  "test_size": 1000,
+  "best_model": "model_1_logistic_regression",
+  "models": {
+    "model_1_logistic_regression": {
+      "model_name": "model_1_logistic_regression",
+      "accuracy": 1.0,
+      "macro_f1": 1.0,
+      "train_time_seconds": 0.1033,
+      "confusion_matrix": [
+        [
+          500,
+          0
+        ],
+        [
+          0,
+          500
+        ]
+      ],
+      "labels": [
+        "Negative",
+        "Positive"
+      ],
+      "classification_report": "              precision    recall  f1-score   support\n\n    Negative     1.0000    1.0000    1.0000       500\n    Positive     1.0000    1.0000    1.0000       500\n\n    accuracy                         1.0000      1000\n   macro avg     1.0000    1.0000    1.0000      1000\nweighted avg     1.0000    1.0000    1.0000      1000\n"
+    },
+    "model_2_linear_svm": {
+      "model_name": "model_2_linear_svm",
+      "accuracy": 1.0,
+      "macro_f1": 1.0,
+      "train_time_seconds": 0.0851,
+      "confusion_matrix": [
+        [
+          500,
+          0
+        ],
+        [
+          0,
+          500
+        ]
+      ],
+      "labels": [
+        "Negative",
+        "Positive"
+      ],
+      "classification_report": "              precision    recall  f1-score   support\n\n    Negative     1.0000    1.0000    1.0000       500\n    Positive     1.0000    1.0000    1.0000       500\n\n    accuracy                         1.0000      1000\n   macro avg     1.0000    1.0000    1.0000      1000\nweighted avg     1.0000    1.0000    1.0000      1000\n"
+    }
+  }
+}

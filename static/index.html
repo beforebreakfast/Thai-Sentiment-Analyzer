@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thai Sentiment Analyzer — Netflix Reviews</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <section class="hero-card">
+      <div>
+        <p class="eyebrow">Machine Learning Deployment</p>
+        <h1>Thai Sentiment Analyzer</h1>
+        <p class="subtitle">
+          ระบบวิเคราะห์ความรู้สึกจากรีวิวภาษาไทยด้วย TF-IDF + Logistic Regression
+          และเปรียบเทียบผลกับโมเดลทางเลือกแบบ A/B
+        </p>
+      </div>
+      <div class="status-pill" id="healthStatus">Checking API...</div>
+    </section>
+
+    <section class="workspace-grid">
+      <form class="panel input-card" id="predictForm">
+        <div class="panel-header">
+          <div>
+            <p class="panel-kicker">Input</p>
+            <h2>📝 Review Text</h2>
+          </div>
+
+          <label class="toggle">
+            <input type="checkbox" id="compareToggle" checked />
+            <span>A/B comparison</span>
+          </label>
+        </div>
+
+        <label for="body">Review</label>
+        <textarea
+          id="body"
+          rows="8"
+          placeholder="พิมพ์รีวิวภาษาไทย เช่น เนื้อเรื่องสนุก ภาพสวย แต่ตอนจบแอบเฉยๆ"
+        ></textarea>
+
+        <div class="sample-block">
+          <div>
+            <p class="sample-title">EXAMPLE</p>
+            <p class="sample-desc">สุ่มข้อความจริงจาก dataset ที่ใช้ train โมเดล</p>
+          </div>
+
+          <div class="examples">
+            <button type="button" data-label="Positive">สุ่ม Positive</button>
+            <button type="button" data-label="Negative">สุ่ม Negative</button>
+            <button type="button" data-label="any">สุ่มทั้งหมด</button>
+          </div>
+        </div>
+
+        <button class="predict-btn" id="predictBtn" type="submit">Predict</button>
+        <p class="form-error" id="formError"></p>
+      </form>
+
+      <section class="panel result-card">
+        <div class="panel-header">
+          <div>
+            <p class="panel-kicker">Output</p>
+            <h2>📊 Model Prediction</h2>
+          </div>
+
+          <button class="ghost-btn" id="refreshInfo" type="button">Model info</button>
+        </div>
+
+        <div id="resultSummary" class="empty-state">
+          กรอกข้อความรีวิว หรือสุ่มตัวอย่างจาก dataset แล้วกด Predict เพื่อดูผลลัพธ์
+        </div>
+
+        <div id="results" class="result-list"></div>
+        <div id="modelInfo" class="model-info"></div>
+      </section>
+    </section>
+  </main>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
